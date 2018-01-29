@@ -72,11 +72,6 @@ void loop()
       d_ready = 0;
       val |= (READ(P2) << count);
       if(++count >7) { count = 0; r_ready = 1; }
-
-      for(int i =0; i<3; ++i)
-      {
-       LED_ON(P5); delay(50); LED_OFF(P5); delay(50);
-      }
     }
   }
   else
@@ -96,11 +91,10 @@ void loop()
     for(int i =0; i<8; ++i)
     {
       WRITE(P3, HIGH);
-      delay(50);
+      delay(30);
+      WRITE(P4, !((val>>i)&0x1));
       WRITE(P3, LOW); 
-
-      WRITE(P4, (val>>i)&0x1);
-      delay(500);
+      delay(30);
     }
   }
   
