@@ -81,6 +81,7 @@ void loop()
 			WRITE(P3, HIGH);
 			delay(30);
 			WRITE(P4, !((val>>i)&0x1));
+			delay(1);
 			WRITE(P3, LOW); 
 			delay(30);
 		}
