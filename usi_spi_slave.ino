@@ -26,20 +26,18 @@
 
 ////////////////////////////////////////////////////////////////////////////
 
-#define CS   PA6         // MOSI    // PA6    // Serial DATA  INPUT
-#define CLK  PA4         // SCK     // PA4    // Serial Clock INPUT
-
 #define P1   6           // MOSI    // PA6    // Serial DATA  INPUT
 #define P2   5           // MISO    // PA5    // Serial DATA  OUTPUT
 #define P3   4           // SCK     // PA4    // Serial Clock INPUT
+#define CS   PA0         // CS      // PA0    // manual interrupt
 
 ////////////////////////////////////////////////////////////////////////////
 
-volatile byte sid = 0;   // serial bit packet id
-volatile byte index = 0;
-volatile byte write_index = 0;
-byte buf[4] = {0};       // 4 byte
-bool up = 0;             // 1: clock rising,  0: clock falling
+volatile byte old_USIDR = 0;                  // USIDR save
+volatile up = 0;                              // 1: clock rising (read),  0: clock falling (write)
+volatile byte count = 0;
+static volatile byte index = 0;               // read write index
+static volatile byte buffer[4] = {0};         // 4 byte
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -47,14 +45,13 @@ void setup()
 {
   // disable interrupts
   cli();
+  pinMode(0, INPUT);
   pinMode(P1, INPUT);
   pinMode(P2, OUTPUT);
   pinMode(P3, INPUT);
 
   USICR = (1<<USIWM0)|(1<<USICS1);
-
   PCMSK0|=1<<CS; 
-  PCMSK0|=1<<CLK;
   GIMSK|=1<<PCIE0;
 
   delay(500);
@@ -63,75 +60,59 @@ void setup()
 }
 
 
-// CLOCK PIN
+// manual interrupt when function call
 ISR(PCINT4_vect)
-{ 
-  switch( (PINA & (1<<CLK)) )
-  {
-    case 0:
-    sid = 0;
-    index = 0;
-    USICR |= (1<<USIOIE);
-    USISR = 1<<USIOIF;      
-    up = 0;
-    break;
-
-    default:
-    USICR &= ~(1<<USIOIE);
-    up = 1;
-    break;
-  }
-}
-
-
-// DATA PIN
-ISR(PCINT6_vect)
 { 
   switch( (PINA & (1<<CS)) )
   {
-    case 0:      // data : LOW
-      if(up)     // only receive data when clock is rising
-      {
-        USIDR &= ~(1<<write_index);
-        ++write_index;
-      }
-      else       // only send data when clock is falling
-      {
-        digitalWrite(P2,  LOW);
-      }
-      break;
+    // read
+    case 0:
+    USICR &= ~(1<<USIOIE);
+    up = 1;
+    count = 0;
+    USICR |= (1<<USIOIE);
+    USISR = (1<<USIOIF);
+  
+    USIDR = buf[tmp[0]];
+    USICR &= ~(1<<USIOIE);
+    break;
 
-    default:     // data : HIGH
-      if(up)     // only receive data when clock is rising
-      {
-        USIDR |= 1<<write_index;
-        ++write_index;
-      }
-      else       // only send data when clock is falling
-      {
-        digitalWrite(P2,  HIGH);
-      }
-      break;
+    // write
+    default:
+    USICR &= ~(1<<USIOIE);
+    USIDR = 0; 
+    up = count = 0;
+    USICR |= (1<<USIOIE);
+    USISR = (1<<USIOIF);
+    break;
   }
 }
 
 
 ISR(USI_OVF_vect)
 { 
-  write_index = 0;
-   
-  switch(sid)
+  USISR = (1<<USIOIF);
+  
+  switch(up)
   {
-  case 0:               
-    sid   = USIDR;      
-    USISR = 1<<USIOIF;  
+    case 0:
+    old_USIDR = USIDR;
+    if(count == 0) 
+    {
+      index = old_USIDR;
+      count = 1;
+    }
+    else
+    { 
+      buf[index] = old_USIDR;
+      count = 0;
+    }
     break;
-    
-  default:
-    USIDR = sid;
-    USISR = 1<<USIOIF;
+
+    default:
+    // read: do nothing
     break;
-  }      
+  }    
 }
 
 
