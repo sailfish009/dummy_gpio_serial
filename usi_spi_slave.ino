@@ -61,7 +61,7 @@ void setup()
 
 
 // manual interrupt when function call
-ISR(PCINT4_vect)
+ISR(PCINT0_vect)
 { 
   switch( (PINA & (1<<CS)) )
   {
