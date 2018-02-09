@@ -99,7 +99,7 @@ ISR(USI_OVF_vect)
     old_USIDR = USIDR;
     if(count == 0) 
     {
-      index = old_USIDR;
+      index = old_USIDR & 0x03;  //buffer[4]
       count = 1;
     }
     else
