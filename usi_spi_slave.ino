@@ -104,19 +104,19 @@ ISR(USI_OVF_vect)
     old_USIDR = USIDR;
     if(count == 0) 
     {
-      index = old_USIDR & 0x03;  //buffer[4]
+      index = old_USIDR; // & 0x03;  //buffer[4]
       count = 1;
     }
     else
     { 
-      buf[reverse(index)] = old_USIDR;
+      buf[reverse(index)&0x03] = old_USIDR;
       count = 0;
     }
     break;
 
     default:
     count = 0;
-    USIDR = buffer[reverse(index)];
+    USIDR = buffer[reverse(index)&0x03];
     break;
   }    
 }
