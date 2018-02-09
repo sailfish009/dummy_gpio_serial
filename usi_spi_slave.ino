@@ -41,6 +41,14 @@ static volatile byte buffer[4] = {0};         // 4 byte
 
 ////////////////////////////////////////////////////////////////////////////
 
+inline byte reverse (byte x) 
+{
+  x = ((x >> 1) & 0x55) | ((x << 1) & 0xaa);
+  x = ((x >> 2) & 0x33) | ((x << 2) & 0xcc);
+  x = ((x >> 4) & 0x0f) | ((x << 4) & 0xf0);
+  return x;
+}
+
 void setup() 
 {
   // disable interrupts
@@ -72,16 +80,13 @@ ISR(PCINT0_vect)
     count = 0;
     USICR |= (1<<USIOIE);
     USISR = (1<<USIOIF);
-  
-    USIDR = buf[tmp[0]];
-    USICR &= ~(1<<USIOIE);
     break;
 
     // write
     default:
     USICR &= ~(1<<USIOIE);
     USIDR = 0; 
-    up = count = 0;
+    up = count = index = 0;
     USICR |= (1<<USIOIE);
     USISR = (1<<USIOIF);
     break;
@@ -104,13 +109,14 @@ ISR(USI_OVF_vect)
     }
     else
     { 
-      buf[index] = old_USIDR;
+      buf[reverse(index)] = old_USIDR;
       count = 0;
     }
     break;
 
     default:
-    // read: do nothing
+    count = 0;
+    USIDR = buffer[reverse(index)];
     break;
   }    
 }
