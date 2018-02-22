@@ -29,7 +29,7 @@
 #define P1   6           // MOSI    // PA6    // Serial DATA  INPUT
 #define P2   5           // MISO    // PA5    // Serial DATA  OUTPUT
 #define P3   4           // SCK     // PA4    // Serial Clock INPUT
-#define CS   PA0         // CS      // PA0    // manual interrupt
+#define CS   PA0         // CS      // PA0    // manual interrupt (optional, but for explicit operation)
 
 ////////////////////////////////////////////////////////////////////////////
 
